@@ -14,13 +14,19 @@ Cette séquence est **différente** de la [[Séquence de démarrage]] simple dé
 
 ## Étapes
 
+> [!important] Corrections après essais terrain
+> Deux corrections par rapport à la version initiale : (1) la [[Valve Alimentation (Priming)|valve d'alimentation]] est **refermée** après l'injection d'eau initiale (sinon la réserve d'eau se vide) ; (2) le priming par à-coups (« jerk ») se fait sur le **[[Valve Drain de fond|drain de fond]]**, et non sur l'écumoire (qui est déjà grande ouverte).
+
 ### 1. Amorçage initial — 15 secondes
 - Ouvrir **complètement** la [[Valve Écumoire]]
-- Ouvrir la [[Valve Alimentation (Priming)|valve d'alimentation en eau]]
+- Ouvrir la [[Valve Alimentation (Priming)|valve d'alimentation en eau]] pour **injecter de l'eau**
 - Maintenir cet état pendant **15 secondes**
 
+### 1b. Refermer l'alimentation
+- Une fois l'injection initiale faite, **refermer complètement** la [[Valve Alimentation (Priming)|valve d'alimentation]] — la laisser ouverte viderait la réserve d'eau.
+
 ### 2. Ouverture de la sortie
-- Une fois les 15 secondes écoulées, ouvrir **complètement** la [[Valve Retour Piscine|valve de sortie (retour vers la piscine)]]
+- Ouvrir **complètement** la [[Valve Retour Piscine|valve de sortie (retour vers la piscine)]]
 
 ### 3. Démarrage du moteur
 - Une fois la valve de sortie complètement ouverte, démarrer le moteur ([[Relais Moteur]])
@@ -28,14 +34,14 @@ Cette séquence est **différente** de la [[Séquence de démarrage]] simple dé
 ### 4. Stabilisation — 10 secondes
 - Laisser le système se stabiliser pendant **10 secondes**, moteur en marche
 
-### 5. Priming de la ligne de l'écumoire (mode duty cycle, répété 10 fois)
-- La [[Valve Écumoire]] passe en mode priming par impulsions :
-  - Ouvrir la valve à environ **5 %** (impulsion d'ouverture de **0.5 seconde**, sur la base d'une course complète de 10 secondes — voir [[Contrôle des valves (H-bridge)]])
+### 5. Priming de la ligne du DRAIN DE FOND (mode duty cycle, répété 10 fois)
+- Le [[Valve Drain de fond|drain de fond]] (qui part **fermé**) passe en mode priming par impulsions :
+  - Ouvrir la valve par une **impulsion d'ouverture** de courte durée (par défaut **0.5 s**, voir [[Contrôle des valves (H-bridge)]])
   - La **refermer immédiatement**
   - **Répéter ce cycle 10 fois**
 
 ### 6. Ouverture complète et fin de la séquence
-- Après les 10 cycles, ouvrir **complètement** la [[Valve Écumoire]]
+- Après les 10 cycles, ouvrir **complètement** le [[Valve Drain de fond|drain de fond]]
 - Le système est alors considéré **fonctionnel** — la séquence de démarrage avec priming est terminée
 
 À la fin de cette séquence, le système passe à l'état `EN_MARCHE` (voir la section *État du système* de [[Programme Raspberry Pi (Python)]]).
@@ -43,15 +49,16 @@ Cette séquence est **différente** de la [[Séquence de démarrage]] simple dé
 ## Résumé visuel
 
 ```
-t=0s   : Écumoire OUVERTE (complète), Alimentation OUVERTE
-t=15s  : Sortie (retour) OUVERTE (complète)
-t=15s+ : Moteur ON (une fois la sortie complètement ouverte)
-t=25s  : Fin de la stabilisation (10 s)
-t=25s+ : Écumoire → 10x [impulsion 0.5 s (~5 %) → fermeture immédiate]
-ensuite: Écumoire OUVERTE (complète) — système fonctionnel
+t=0s   : Écumoire OUVERTE (complète), Alimentation OUVERTE (injection d'eau)
+t=15s  : Alimentation FERMÉE
+t≈30s  : Sortie (retour) OUVERTE (complète)
+t≈30s+ : Moteur ON (une fois la sortie complètement ouverte)
++10s   : Fin de la stabilisation
+ensuite: Drain de fond → 10x [impulsion 0.5 s → fermeture immédiate]
+puis   : Drain de fond OUVERT (complet) — système fonctionnel
 ```
 
-> [!note] Paramètres à calibrer
-> Les durées (15 s, 10 s), le nombre de cycles (10) et le degré d'ouverture (~5 % via 0.5 s) sont des valeurs fournies par le concepteur du système ; elles pourront être ajustées si le comportement réel le justifie.
+> [!note] Paramètres à calibrer (modifiables dans l'[[Interface Web (Pi)]])
+> Les durées (amorçage, stabilisation), le nombre de cycles et la durée d'impulsion du jerk sont éditables depuis l'interface web (`config.json`). La **course complète d'une valve est d'environ 15 secondes** (mesurée sur le matériel — voir [[Contrôle des valves (H-bridge)]]).
 
 Voir [[Programme Raspberry Pi (Python)]] pour l'implémentation (c'est le Pi qui gère tous ces délais et envoie les commandes primitives à l'Arduino une à une), [[Séquence de démarrage]] pour la version simple (bouton vert), et [[Séquence d'arrêt]] pour la procédure d'arrêt.

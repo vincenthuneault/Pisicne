@@ -21,7 +21,7 @@ CHEMIN_CONFIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config
 # Valeurs par défaut = valeurs historiques de piscine.py. Servent de repli si
 # config.json est absent, incomplet ou invalide.
 DEFAUTS = {
-    "course_complete_ms": 10000,
+    "course_complete_ms": 15000,
     "priming": {
         "amorcage_initial_s": 15,
         "stabilisation_s": 10,

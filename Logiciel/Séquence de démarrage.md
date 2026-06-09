@@ -10,8 +10,11 @@ Exécutée par le [[Programme Raspberry Pi (Python)|programme Python du Raspberr
 
 Cette séquence est volontairement **simple** :
 
-1. Ouvrir **toutes les valves** : [[Valve Écumoire]], [[Valve Drain de fond]], [[Valve Alimentation (Priming)|valve d'alimentation]] et [[Valve Retour Piscine|valve de retour]]
+1. Ouvrir les **valves de filtration** : [[Valve Écumoire]], [[Valve Drain de fond]] et [[Valve Retour Piscine|valve de retour]]
 2. Enclencher le contacteur du moteur ([[Relais Moteur]])
+
+> [!warning] Ne PAS ouvrir l'alimentation (corrigé après essais terrain)
+> La [[Valve Alimentation (Priming)|valve d'alimentation]] **reste fermée** pendant un démarrage normal : l'ouvrir **viderait la réserve d'eau**. Elle ne sert que ponctuellement, pour le priming ([[Séquence de démarrage avec priming]]) et l'[[Séquence d'ajout d'eau|ajout d'eau]].
 
 À la fin de cette séquence, le système passe à l'état `EN_MARCHE` (voir la section *État du système* de [[Programme Raspberry Pi (Python)]]) — ce qui détermine notamment le comportement futur du bouton bleu ([[Séquence d'ajout d'eau]]).
 

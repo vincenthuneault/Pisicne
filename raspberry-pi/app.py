@@ -151,6 +151,8 @@ def api_firmware_flash():
 def demarrer():
     # Écoute des boutons physiques (vert/rouge) en arrière-plan.
     threading.Thread(target=orchestrateur.boucle, daemon=True).start()
+    # Sonde périodique de l'état des boutons (pour l'affichage dans l'UI).
+    threading.Thread(target=orchestrateur.moniteur_boutons, daemon=True).start()
     # Sécurité au démarrage : repartir d'un état sûr connu (système éteint).
     orchestrateur.arret_initial()
 

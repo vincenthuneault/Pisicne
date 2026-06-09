@@ -30,6 +30,15 @@ function afficherResultat(res) {
 
 let sequenceEnCours = false;
 
+// Noms internes des valves → libellés affichés, dans l'ordre voulu.
+const VALVES_LIBELLE = {
+  ecumoire: "Écumoire",
+  drain: "Drain de fond",
+  alimentation: "Alimentation",
+  retour: "Retour piscine",
+};
+const FLECHE_MOUVEMENT = { ouverture: "▲ ouvre", fermeture: "▼ ferme", arret: "" };
+
 async function rafraichirEtat() {
   try {
     const reponse = await fetch("/api/etat");
@@ -45,11 +54,46 @@ async function rafraichirEtat() {
     else if (etat.sequence_en_cours) info.textContent = "⏳ Séquence en cours…";
     else info.textContent = "";
 
+    majEtatMateriel(etat);
+
     sequenceEnCours = etat.sequence_en_cours || etat.flashage_en_cours;
     majDisponibiliteManuel();
   } catch (e) {
     document.getElementById("badge-etat").textContent = "Hors ligne";
   }
+}
+
+function majEtatMateriel(etat) {
+  // Barres de position des valves
+  const conteneur = document.getElementById("etat-valves");
+  const valves = etat.valves || {};
+  let html = "";
+  for (const nom of Object.keys(VALVES_LIBELLE)) {
+    const v = valves[nom] || { position: 0, mouvement: "arret" };
+    const enMouv = v.mouvement !== "arret";
+    html += `<div class="valve-etat">
+        <span class="nom">${VALVES_LIBELLE[nom]}</span>
+        <div class="barre"><div class="remplissage${enMouv ? " bouge" : ""}" style="width:${v.position}%"></div></div>
+        <span class="pct">${v.position}% <span class="mouv">${FLECHE_MOUVEMENT[v.mouvement] || ""}</span></span>
+      </div>`;
+  }
+  conteneur.innerHTML = html;
+
+  // Moteur (relais) — état commandé (le relais est un stub non câblé)
+  const moteur = document.getElementById("indic-moteur");
+  moteur.textContent = "Moteur (relais) : " + (etat.moteur ? "EN MARCHE" : "arrêté");
+  moteur.className = "indic " + (etat.moteur ? "on" : "off");
+
+  // Boutons
+  const b = etat.boutons || {};
+  majIndicBouton("indic-bvert", "Bouton vert", b.vert);
+  majIndicBouton("indic-brouge", "Bouton rouge", b.rouge);
+}
+
+function majIndicBouton(id, libelle, presse) {
+  const el = document.getElementById(id);
+  el.textContent = `${libelle} : ${presse ? "pressé" : "relâché"}`;
+  el.className = "indic " + (presse ? "on" : "off");
 }
 
 function majDisponibiliteManuel() {
@@ -170,4 +214,4 @@ document.getElementById("btn-flasher").addEventListener("click", async () => {
 
 chargerConfig();
 rafraichirEtat();
-setInterval(rafraichirEtat, 2000);
+setInterval(rafraichirEtat, 1000);  // 1 s : suit le mouvement des valves en direct

@@ -21,7 +21,7 @@ Cette note documente le principe **générique** de commande, destiné à être 
 
 ### Points clés
 
-- **Course complète** : ouvrir ou fermer une valve **au complet** prend environ **10 secondes**.
+- **Course complète** : ouvrir ou fermer une valve **au complet** prend environ **15 secondes** (mesuré sur le matériel ; paramètre `course_complete_ms`, modifiable dans l'[[Interface Web (Pi)]]).
 - **Maintien de la polarité** : la polarité peut être maintenue indéfiniment une fois la valve en position — le moteur **arrête de consommer** du courant lorsqu'il atteint la butée de fin de course. Il n'est donc pas nécessaire de couper les IO après une ouverture/fermeture complète.
 - **Inversion pour fermer** : il suffit d'inverser la polarité (IO A ↔ IO B) pour faire fermer une valve précédemment ouverte.
 - **Arrêt en cours de course** : pour interrompre le mouvement (par ex. obtenir une **ouverture partielle**), les **deux IO doivent être mis à `0`**.

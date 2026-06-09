@@ -35,6 +35,11 @@ Puis ouvrir `http://<adresse-du-pi>:8080` depuis un navigateur du réseau local.
 
 1. **État** — badge `EN MARCHE` / `ÉTEINT`, rafraîchi par sondage régulier ; indique aussi
    si une séquence ou un flashage est en cours.
+1b. **État du matériel** — pour chaque valve, une **barre de position** (0 % fermée → 100 %
+   ouverte) avec le sens de mouvement en direct, plus l'état du **relais moteur** et des
+   **boutons** (vert/rouge). ⚠️ La position est **estimée** logiciellement (boucle ouverte,
+   sans capteur) : calculée par « dead reckoning » à partir des commandes envoyées et de la
+   course complète (`course_complete_ms`), pas mesurée.
 2. **Contrôle** — boutons déclenchant les séquences (`Démarrage simple`,
    `Démarrage avec priming`, `Ajout d'eau`) et un grand bouton **Arrêt d'urgence**
    (équivalent du [[Séquence d'arrêt|bouton rouge]], priorité absolue).
@@ -49,7 +54,7 @@ Les délais autrefois codés en dur dans `piscine.py` vivent maintenant dans
 `raspberry-pi/config.json` (lu/écrit par `config.py`, validé : nombres > 0). Modifiables depuis
 la page, appliqués au **prochain lancement** de séquence :
 
-- `course_complete_ms` — course complète d'une valve (≈ 10 000 ms, voir [[Contrôle des valves (H-bridge)]])
+- `course_complete_ms` — course complète d'une valve (≈ **15 000 ms**, mesuré, voir [[Contrôle des valves (H-bridge)]])
 - `priming` — `amorcage_initial_s`, `stabilisation_s`, `nb_cycles`,
   `impulsion_ouverture_ms`, `impulsion_fermeture_ms` (voir [[Séquence de démarrage avec priming]])
 - `ajout_eau` — `impulsion_ouverture_ms`, `duree_maintien_s` (voir [[Séquence d'ajout d'eau]])

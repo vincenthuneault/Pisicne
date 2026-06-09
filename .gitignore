@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Firmware téléversé via l'interface web (staging temporaire)
+raspberry-pi/firmware_recu/
+
+# Obsidian — état d'interface par utilisateur (UI volatile)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Piscine — Contrôle</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Système de filtration — Piscine</h1>
+    <div class="etat">
+      <span id="badge-etat" class="badge">…</span>
+      <span id="badge-sequence" class="badge-info"></span>
+    </div>
+  </header>
+
+  <!-- ===================== Contrôle ===================== -->
+  <section>
+    <h2>Contrôle</h2>
+    <p class="aide">Déclenche les mêmes séquences que les boutons physiques.</p>
+    <div class="boutons-controle">
+      <button class="btn vert"   data-sequence="demarrage">Démarrage simple</button>
+      <button class="btn bleu"   data-sequence="priming">Démarrage avec priming</button>
+      <button class="btn bleu"   data-sequence="ajout_eau">Ajout d'eau (1 h)</button>
+    </div>
+    <button id="btn-arret" class="btn arret">⛔ ARRÊT D'URGENCE</button>
+  </section>
+
+  <!-- ===================== Mode manuel ===================== -->
+  <section>
+    <h2>Mode manuel <span class="aide">— débogage / câblage</span></h2>
+    <p class="aide">Indisponible pendant une séquence. Envoie une commande primitive isolée.</p>
+    <div class="manuel-valves">
+      <div class="ligne-entete">
+        <span>Valve</span>
+        <span>Durée (s)</span>
+        <span>Actions</span>
+      </div>
+      <div class="ligne-valve" data-valve="ecumoire">
+        <span class="nom">Écumoire</span>
+        <input type="number" class="duree" value="10" min="0" step="0.5">
+        <span class="actions">
+          <button class="btn-mini" data-action="ouvrir">Ouvrir</button>
+          <button class="btn-mini" data-action="fermer">Fermer</button>
+          <button class="btn-mini" data-action="arreter">Arrêter</button>
+        </span>
+      </div>
+      <div class="ligne-valve" data-valve="drain">
+        <span class="nom">Drain de fond</span>
+        <input type="number" class="duree" value="10" min="0" step="0.5">
+        <span class="actions">
+          <button class="btn-mini" data-action="ouvrir">Ouvrir</button>
+          <button class="btn-mini" data-action="fermer">Fermer</button>
+          <button class="btn-mini" data-action="arreter">Arrêter</button>
+        </span>
+      </div>
+      <div class="ligne-valve" data-valve="alimentation">
+        <span class="nom">Alimentation</span>
+        <input type="number" class="duree" value="10" min="0" step="0.5">
+        <span class="actions">
+          <button class="btn-mini" data-action="ouvrir">Ouvrir</button>
+          <button class="btn-mini" data-action="fermer">Fermer</button>
+          <button class="btn-mini" data-action="arreter">Arrêter</button>
+        </span>
+      </div>
+      <div class="ligne-valve" data-valve="retour">
+        <span class="nom">Retour piscine</span>
+        <input type="number" class="duree" value="10" min="0" step="0.5">
+        <span class="actions">
+          <button class="btn-mini" data-action="ouvrir">Ouvrir</button>
+          <button class="btn-mini" data-action="fermer">Fermer</button>
+          <button class="btn-mini" data-action="arreter">Arrêter</button>
+        </span>
+      </div>
+    </div>
+    <div class="manuel-moteur">
+      <span class="nom">Moteur <span class="aide">(stub — broche à recâbler)</span></span>
+      <button class="btn-mini" data-moteur="demarrer">Démarrer</button>
+      <button class="btn-mini" data-moteur="arreter">Arrêter</button>
+      <button class="btn-mini" id="btn-lire-boutons">Lire les boutons</button>
+      <span id="etat-boutons" class="aide"></span>
+    </div>
+  </section>
+
+  <!-- ===================== Paramètres ===================== -->
+  <section>
+    <h2>Paramètres des séquences</h2>
+    <p class="aide">Durées en secondes (s) ou millisecondes (ms). Appliquées au prochain lancement.</p>
+    <form id="form-config">
+      <fieldset>
+        <legend>Général</legend>
+        <label>Course complète d'une valve (ms)
+          <input type="number" name="course_complete_ms" min="1" step="1"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Démarrage avec priming</legend>
+        <label>Amorçage initial (s)
+          <input type="number" name="priming.amorcage_initial_s" min="0" step="0.5"></label>
+        <label>Stabilisation (s)
+          <input type="number" name="priming.stabilisation_s" min="0" step="0.5"></label>
+        <label>Nombre de cycles
+          <input type="number" name="priming.nb_cycles" min="1" step="1"></label>
+        <label>Impulsion ouverture (ms)
+          <input type="number" name="priming.impulsion_ouverture_ms" min="1" step="1"></label>
+        <label>Impulsion fermeture (ms)
+          <input type="number" name="priming.impulsion_fermeture_ms" min="1" step="1"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Ajout d'eau</legend>
+        <label>Impulsion ouverture ~10 % (ms)
+          <input type="number" name="ajout_eau.impulsion_ouverture_ms" min="1" step="1"></label>
+        <label>Durée de maintien (s)
+          <input type="number" name="ajout_eau.duree_maintien_s" min="1" step="1"></label>
+      </fieldset>
+      <button type="submit" class="btn">Enregistrer les paramètres</button>
+    </form>
+  </section>
+
+  <!-- ===================== Firmware ===================== -->
+  <section>
+    <h2>Firmware Arduino</h2>
+    <p class="aide">Téléverser un sketch <code>.ino</code> puis flasher l'Arduino (compilation sur le Pi).</p>
+    <form id="form-firmware">
+      <input type="file" id="fichier-firmware" accept=".ino" required>
+      <button type="submit" class="btn">Téléverser</button>
+      <button type="button" id="btn-flasher" class="btn">⚡ Flasher l'Arduino</button>
+    </form>
+    <pre id="log-firmware" class="log"></pre>
+  </section>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

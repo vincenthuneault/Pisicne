@@ -1,0 +1,14 @@
+{
+  "course_complete_ms": 10000,
+  "priming": {
+    "amorcage_initial_s": 15,
+    "stabilisation_s": 10,
+    "nb_cycles": 10,
+    "impulsion_ouverture_ms": 500,
+    "impulsion_fermeture_ms": 500
+  },
+  "ajout_eau": {
+    "impulsion_ouverture_ms": 1000,
+    "duree_maintien_s": 3600
+  }
+}

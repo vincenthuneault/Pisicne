@@ -106,6 +106,10 @@ class LiaisonArduino:
             return
         if not self.simulation:
             self._ser = serial.Serial(self.port, self.bauds, timeout=1)
+            # L'ouverture du port réinitialise l'Arduino (toggle DTR/RTS) : il
+            # faut laisser le firmware redémarrer avant d'envoyer la moindre
+            # commande, sinon les premières (ex. l'arrêt de sécurité) sont perdues.
+            time.sleep(2)
         self._actif = True
         if not self.simulation:
             self._thread = threading.Thread(target=self._lire_en_continu, daemon=True)

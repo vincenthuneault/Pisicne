@@ -34,7 +34,10 @@ import serial
 
 import config as config_module
 
-PORT_SERIE = "/dev/ttyACM0"
+# Port série de l'Arduino. Surchargé par la variable d'environnement
+# PISCINE_PORT_SERIE (ex. /dev/ttyUSB0 pour un Arduino à adaptateur CH340,
+# /dev/ttyACM0 pour un Uno officiel).
+PORT_SERIE = os.environ.get("PISCINE_PORT_SERIE", "/dev/ttyACM0")
 BAUDS = 115200
 
 NOMS_VALVES = ("ecumoire", "drain", "alimentation", "retour")

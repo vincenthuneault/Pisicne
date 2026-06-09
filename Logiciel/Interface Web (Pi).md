@@ -24,6 +24,11 @@ python3 raspberry-pi/app.py
 PISCINE_SIMULATION=1 python3 raspberry-pi/app.py
 ```
 
+> [!note] Port série
+> Par défaut le port est `/dev/ttyACM0` (Uno officiel). Pour un Arduino à adaptateur **CH340**
+> (port `/dev/ttyUSB0`), le surcharger : `PISCINE_PORT_SERIE=/dev/ttyUSB0 python3 raspberry-pi/app.py`.
+> Le port web se règle de même avec `PISCINE_PORT_WEB` (défaut 8080).
+
 Puis ouvrir `http://<adresse-du-pi>:8080` depuis un navigateur du réseau local.
 
 ## Sections de la page

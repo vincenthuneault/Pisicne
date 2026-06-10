@@ -35,6 +35,16 @@ PORT_WEB = int(os.environ.get("PISCINE_PORT_WEB", "8080"))
 
 app = Flask(__name__)
 
+
+@app.after_request
+def _empecher_cache(reponse):
+    # Évite que les navigateurs gardent en cache une ancienne version de la
+    # page/JS/CSS : sans ça, deux appareils peuvent afficher des versions
+    # différentes de l'interface après une mise à jour du code.
+    reponse.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return reponse
+
+
 arduino = LiaisonArduino()
 orchestrateur = Orchestrateur(arduino)
 

@@ -124,7 +124,9 @@ h2 { margin-top: 0; font-size: 1.1rem; }
 #schema #moteur.on circle { stroke: var(--vert); }
 #schema #moteur.on .t-m { fill: var(--vert); }
 #schema #pompe.tourne .rotor {
-  transform-box: fill-box; transform-origin: center;
+  /* centre exact de la pompe (cx/cy du cercle #pompe) — ne pas utiliser
+     fill-box: la boîte englobante des 3 tiges n'est pas centrée sur ce point */
+  transform-box: view-box; transform-origin: 530px 350px;
   animation: rotor-spin 0.9s linear infinite;
 }
 @keyframes rotor-spin { to { transform: rotate(360deg); } }

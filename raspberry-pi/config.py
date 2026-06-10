@@ -24,6 +24,7 @@ DEFAUTS = {
     "course_complete_ms": 15000,
     "priming": {
         "amorcage_initial_s": 15,
+        "delai_fermeture_alimentation_s": 10,
         "stabilisation_s": 10,
         "nb_cycles": 10,
         "impulsion_ouverture_ms": 500,

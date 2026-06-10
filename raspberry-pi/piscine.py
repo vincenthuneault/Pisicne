@@ -350,8 +350,9 @@ def sequence_demarrage_avec_priming(arduino, urgence, config):
     """Bouton bleu, système éteint : démarrage avec ré-amorçage des tuyaux.
 
     Le priming par impulsions (« jerk ») se fait sur le DRAIN DE FOND.
-    L'alimentation n'est ouverte que brièvement pour injecter de l'eau au
-    départ, puis refermée (sinon la réserve d'eau se vide).
+    L'alimentation reste ouverte (injection d'eau continue) jusqu'à un
+    certain délai après le démarrage du moteur, puis est refermée (sinon
+    la réserve d'eau se vide à long terme).
     """
     course_ms = config.course_complete_ms
     p = config.priming
@@ -361,17 +362,20 @@ def sequence_demarrage_avec_priming(arduino, urgence, config):
     arduino.ouvrir_valve("alimentation", course_ms)
     urgence.attendre(p["amorcage_initial_s"])
 
-    # 1b) Refermer l'alimentation : l'injection d'eau initiale est faite
-    #     (la laisser ouverte viderait la réserve d'eau).
-    arduino.fermer_valve("alimentation", course_ms)
-    urgence.attendre(course_ms / 1000)
-
     # 2) Ouverture complète de la valve de retour vers la piscine
+    #    (alimentation toujours ouverte)
     arduino.ouvrir_valve("retour", course_ms)
     urgence.attendre(course_ms / 1000)
 
-    # 3) Démarrage du moteur (retour complètement ouvert)
+    # 3) Démarrage du moteur (retour complètement ouvert, alimentation toujours ouverte)
     arduino.demarrer_moteur()
+
+    # 3b) Maintenir l'alimentation ouverte un délai après le démarrage du moteur
+    urgence.attendre(p["delai_fermeture_alimentation_s"])
+
+    # 3c) Refermer l'alimentation
+    arduino.fermer_valve("alimentation", course_ms)
+    urgence.attendre(course_ms / 1000)
 
     # 4) Stabilisation, moteur en marche
     urgence.attendre(p["stabilisation_s"])

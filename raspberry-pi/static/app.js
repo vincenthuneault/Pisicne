@@ -134,16 +134,17 @@ function majSchema(etat) {
   const alimentation       = ouvert("alimentation");  // injection (priming / ajout d'eau)
 
   const flux = {
-    "flux-ecumoire": aspirationEcumoire,
-    "flux-drain": aspirationDrain,
-    "flux-manifold": aspirationEcumoire || aspirationDrain || alimentation,
-    "flux-pompe": refoulement,
-    "flux-alim": alimentation,
-    "flux-d1": refoulement,
-    "flux-d2": refoulement,
-    "flux-d3": refoulement,
-    "flux-header": refoulement,
-    "flux-retour": refoulement,
+    "flux-ecumoire-in": aspirationEcumoire,
+    "flux-ecumoire-out": aspirationEcumoire,
+    "flux-drain-in": aspirationDrain,
+    "flux-drain-out": aspirationDrain,
+    "flux-alim-in": alimentation,
+    "flux-alim-out": alimentation,
+    "flux-pompe-filtre": refoulement,
+    "flux-filtre-chauffe": refoulement,
+    "flux-chauffe-nature": refoulement,
+    "flux-nature-retour": refoulement,
+    "flux-retour-piscine": refoulement,
   };
   for (const [id, actif] of Object.entries(flux)) {
     const el = document.getElementById(id);

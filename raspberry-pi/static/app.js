@@ -55,6 +55,7 @@ async function rafraichirEtat() {
     else info.textContent = "";
 
     majEtatMateriel(etat);
+    await majTimeline(etat);
 
     sequenceEnCours = etat.sequence_en_cours || etat.flashage_en_cours;
     majDisponibiliteManuel();
@@ -88,6 +89,140 @@ function majEtatMateriel(etat) {
   const b = etat.boutons || {};
   majIndicBouton("indic-bvert", "Bouton vert", b.vert);
   majIndicBouton("indic-brouge", "Bouton rouge", b.rouge);
+
+  // Schéma de procédé animé
+  majSchema(etat);
+}
+
+// ===================== Schéma de procédé (P&ID animé) =====================
+
+const SEUIL_OUVERT = 5;  // % au-delà duquel on considère qu'il y a passage d'eau
+
+function classeValve(v) {
+  if (v.position <= 2) return "fermee";
+  if (v.position >= 98) return "ouverte";
+  return "partielle";
+}
+
+function majSchema(etat) {
+  const svg = document.getElementById("schema");
+  if (!svg) return;
+  const valves = etat.valves || {};
+  const moteurOn = !!etat.moteur;
+
+  // --- Valves : couleur selon position + pulsation si en mouvement ---
+  for (const nom of Object.keys(VALVES_LIBELLE)) {
+    const groupe = document.getElementById("valve-" + nom);
+    if (!groupe) continue;
+    const v = valves[nom] || { position: 0, mouvement: "arret" };
+    groupe.classList.remove("fermee", "partielle", "ouverte", "bouge");
+    groupe.classList.add(classeValve(v));
+    if (v.mouvement && v.mouvement !== "arret") groupe.classList.add("bouge");
+    const pct = document.getElementById("pct-" + nom);
+    if (pct) pct.textContent = v.position + "%";
+  }
+
+  // --- Moteur + rotor de pompe ---
+  document.getElementById("moteur").classList.toggle("on", moteurOn);
+  document.getElementById("pompe").classList.toggle("tourne", moteurOn);
+
+  // --- Débit : quels segments transportent de l'eau en ce moment ---
+  const ouvert = (nom) => ((valves[nom] || {}).position || 0) > SEUIL_OUVERT;
+  const aspirationEcumoire = moteurOn && ouvert("ecumoire");
+  const aspirationDrain    = moteurOn && ouvert("drain");
+  const refoulement        = moteurOn;  // pompe -> filtre -> nature2 -> retour
+  const alimentation       = ouvert("alimentation");  // injection (priming / ajout d'eau)
+
+  const flux = {
+    "flux-ecumoire": aspirationEcumoire,
+    "flux-drain": aspirationDrain,
+    "flux-manifold": aspirationEcumoire || aspirationDrain || alimentation,
+    "flux-pompe": refoulement,
+    "flux-alim": alimentation,
+    "flux-d1": refoulement,
+    "flux-d2": refoulement,
+    "flux-d3": refoulement,
+    "flux-header": refoulement,
+    "flux-retour": refoulement,
+  };
+  for (const [id, actif] of Object.entries(flux)) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle("actif", actif);
+  }
+}
+
+// ===================== Timeline de séquence (frise + progression) =====================
+
+const TITRES_SEQUENCE = {
+  demarrage: "Démarrage simple",
+  priming: "Démarrage avec priming",
+  ajout_eau: "Ajout d'eau",
+};
+
+let timelineSequenceChargee = null;  // nom de la séquence dont la frise est affichée
+let timelineDonnees = null;          // {duree_totale_s, etapes}
+let timelineMasquageTimeout = null;
+
+async function majTimeline(etat) {
+  const nom = etat.sequence_nom || null;
+
+  if (nom && nom !== timelineSequenceChargee) {
+    clearTimeout(timelineMasquageTimeout);
+    try {
+      const reponse = await fetch("/api/sequence/" + nom + "/timeline");
+      if (reponse.ok) {
+        timelineDonnees = await reponse.json();
+        timelineSequenceChargee = nom;
+        rendreTimeline(nom, timelineDonnees);
+      }
+    } catch (e) { /* on retentera au prochain rafraîchissement */ }
+  }
+
+  if (timelineSequenceChargee && timelineDonnees) {
+    if (etat.sequence_en_cours) {
+      majProgressionTimeline(etat.sequence_ecoulee_s || 0);
+    } else {
+      // Séquence terminée : on affiche la frise complète puis on la masque.
+      majProgressionTimeline(timelineDonnees.duree_totale_s);
+      const nomTermine = timelineSequenceChargee;
+      timelineMasquageTimeout = setTimeout(() => {
+        if (timelineSequenceChargee === nomTermine) {
+          document.getElementById("timeline-section").hidden = true;
+          timelineSequenceChargee = null;
+          timelineDonnees = null;
+        }
+      }, 4000);
+    }
+  }
+}
+
+function rendreTimeline(nom, timeline) {
+  document.getElementById("timeline-titre").textContent =
+    "Progression — " + (TITRES_SEQUENCE[nom] || nom);
+
+  const jalons = document.getElementById("timeline-jalons");
+  const duree = timeline.duree_totale_s || 1;
+  jalons.innerHTML = timeline.etapes.map((etape) => {
+    const pct = Math.max(0, Math.min(100, (etape.t / duree) * 100));
+    return `<div class="jalon" data-t="${etape.t}" style="left:${pct}%">
+        <span class="jalon-point"></span>
+        <span class="jalon-label">${etape.nom}</span>
+      </div>`;
+  }).join("");
+
+  document.getElementById("timeline-progression").style.width = "0%";
+  document.getElementById("timeline-section").hidden = false;
+}
+
+function majProgressionTimeline(ecoulee) {
+  const duree = (timelineDonnees && timelineDonnees.duree_totale_s) || 1;
+  const pct = Math.max(0, Math.min(100, (ecoulee / duree) * 100));
+  document.getElementById("timeline-progression").style.width = pct + "%";
+  document.querySelectorAll("#timeline-jalons .jalon").forEach((el) => {
+    el.classList.toggle("atteint", ecoulee >= parseFloat(el.dataset.t));
+  });
+  document.getElementById("timeline-temps").textContent =
+    `${Math.round(ecoulee)} s / ${Math.round(duree)} s`;
 }
 
 function majIndicBouton(id, libelle, presse) {

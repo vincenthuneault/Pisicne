@@ -43,6 +43,12 @@ Puis ouvrir `http://<adresse-du-pi>:8080` depuis un navigateur du réseau local.
 2. **Contrôle** — boutons déclenchant les séquences (`Démarrage simple`,
    `Démarrage avec priming`, `Ajout d'eau`) et un grand bouton **Arrêt d'urgence**
    (équivalent du [[Séquence d'arrêt|bouton rouge]], priorité absolue).
+   Pendant l'exécution d'une séquence, une **frise chronologique** apparaît sous les
+   boutons : une ligne de jalons (noms résumés, ex. « Amorçage initial », « Démarrage
+   moteur », « Fermeture alimentation »…) calculés à partir des paramètres courants
+   (`config.json`), avec une **barre de progression** qui avance en temps réel et
+   marque chaque jalon comme atteint au fil de la séquence. La frise se masque
+   quelques secondes après la fin de la séquence.
 3. **Mode manuel** — ouvre/ferme/arrête chaque valve (avec durée) et pilote le moteur, comme
    `test_materiel.py`. **Désactivé pendant une séquence** ou un flashage.
 4. **Paramètres** — formulaire éditant les délais/paramètres des séquences (fichier `config.json`).
@@ -81,6 +87,7 @@ pause, **ferme la liaison série**, lance la compilation+téléversement, puis *
 | GET | `/api/etat` | État du système (sondage) |
 | GET / POST | `/api/config` | Lire / enregistrer les paramètres |
 | POST | `/api/sequence/<nom>` | Lancer `demarrage` \| `priming` \| `ajout_eau` |
+| GET | `/api/sequence/<nom>/timeline` | Jalons (frise) de la séquence, calculés depuis `config.json` |
 | POST | `/api/arret` | Arrêt d'urgence (priorité absolue) |
 | POST | `/api/manuel/valve` | `{valve, action, duree_ms}` |
 | POST | `/api/manuel/moteur` | `{action}` |

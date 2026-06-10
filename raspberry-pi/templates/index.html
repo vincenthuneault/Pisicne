@@ -15,6 +15,159 @@
     </div>
   </header>
 
+  <!-- ===================== Schéma de procédé (P&ID animé) ===================== -->
+  <section class="section-schema">
+    <h2>Schéma de procédé <span class="aide">— vue en direct du circuit (animée par l'état estimé)</span></h2>
+    <div class="schema-cadre">
+      <svg id="schema" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"
+           role="img" aria-label="Schéma de procédé du système de filtration de la piscine">
+        <defs>
+          <linearGradient id="grad-eau" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#5fb6e6"/>
+            <stop offset="100%" stop-color="#2b7bd1"/>
+          </linearGradient>
+          <linearGradient id="grad-cuve" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#eef2f6"/>
+          </linearGradient>
+          <linearGradient id="grad-fond" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"  stop-color="#fbfcfd"/>
+            <stop offset="100%" stop-color="#eef2f6"/>
+          </linearGradient>
+          <filter id="ombre" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#1f2933" flood-opacity="0.18"/>
+          </filter>
+          <marker id="fleche" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#9aa7b4"/>
+          </marker>
+        </defs>
+
+        <!-- Fond -->
+        <rect x="2" y="2" width="996" height="596" rx="18" fill="url(#grad-fond)" stroke="#e1e7ed"/>
+
+        <!-- ===== Tuyauterie (couche de base) ===== -->
+        <g class="tuyaux" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path class="tuyau" d="M230,250 H460"/>            <!-- pool -> écumoire -> manifold -->
+          <path class="tuyau" d="M230,410 H460"/>            <!-- pool -> drain -> manifold -->
+          <path class="tuyau" d="M460,250 V410"/>            <!-- manifold vertical -->
+          <path class="tuyau" d="M460,330 H526"/>            <!-- manifold -> pompe -->
+          <path class="tuyau" d="M460,520 V410"/>            <!-- alimentation -> manifold -->
+          <path class="tuyau" d="M594,330 H655"/>            <!-- pompe -> filtre -->
+          <path class="tuyau" d="M725,330 H785"/>            <!-- filtre -> nature2 -->
+          <path class="tuyau" d="M845,330 H910 V140"/>       <!-- nature2 -> entête -->
+          <path class="tuyau" d="M910,140 H150"/>            <!-- entête de retour -->
+          <path class="tuyau" d="M150,140 V230"/>            <!-- retour -> piscine -->
+        </g>
+
+        <!-- ===== Débit (couche animée, activée par classe .actif) ===== -->
+        <g class="flux-couche" fill="none" stroke-linecap="round">
+          <path id="flux-ecumoire"  class="flux" d="M230,250 H460"/>
+          <path id="flux-drain"     class="flux" d="M230,410 H460"/>
+          <path id="flux-manifold"  class="flux" d="M460,250 V410"/>
+          <path id="flux-pompe"     class="flux" d="M460,330 H526"/>
+          <path id="flux-alim"      class="flux" d="M460,520 V410"/>
+          <path id="flux-d1"        class="flux" d="M594,330 H655"/>
+          <path id="flux-d2"        class="flux" d="M725,330 H785"/>
+          <path id="flux-d3"        class="flux" d="M845,330 H910 V140"/>
+          <path id="flux-header"    class="flux" d="M910,140 H150"/>
+          <path id="flux-retour"    class="flux" d="M150,140 V230"/>
+        </g>
+
+        <!-- ===== Piscine ===== -->
+        <g class="piscine">
+          <path d="M60,235 V465 H230" fill="none" stroke="#c2ccd6" stroke-width="6" stroke-linecap="round"/>
+          <path d="M60,235 V465 H230" fill="none" stroke="none"/>
+          <clipPath id="clip-piscine"><rect x="63" y="238" width="164" height="225" rx="4"/></clipPath>
+          <rect x="63" y="258" width="164" height="205" fill="url(#grad-eau)" clip-path="url(#clip-piscine)" opacity="0.9"/>
+          <path class="vague" d="M63,260 q20,-8 40,0 t40,0 t40,0 t40,0 t40,0" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.5" clip-path="url(#clip-piscine)"/>
+          <text x="145" y="445" class="t-titre" text-anchor="middle" fill="#ffffff">PISCINE</text>
+          <text x="145" y="497" class="t-sous" text-anchor="middle">≈ 50 pi · −6 pi sous le niveau</text>
+        </g>
+
+        <!-- ===== Cuves / équipements ===== -->
+        <!-- Pompe -->
+        <g id="pompe" class="equipement">
+          <circle cx="560" cy="330" r="34" fill="url(#grad-cuve)" stroke="#9aa7b4" stroke-width="3" filter="url(#ombre)"/>
+          <g class="rotor">
+            <path d="M560,330 L560,303 M560,330 L583,343 M560,330 L537,343" stroke="#9aa7b4" stroke-width="5" stroke-linecap="round" fill="none"/>
+          </g>
+          <circle cx="560" cy="330" r="5" fill="#9aa7b4"/>
+          <text x="560" y="392" class="t-equip" text-anchor="middle">POMPE</text>
+          <!-- Moteur (relais) -->
+          <line x1="560" y1="296" x2="560" y2="280" stroke="#9aa7b4" stroke-width="4"/>
+          <g id="moteur" class="moteur">
+            <circle cx="560" cy="256" r="22" fill="url(#grad-cuve)" stroke="#9aa7b4" stroke-width="3" filter="url(#ombre)"/>
+            <text x="560" y="263" class="t-m" text-anchor="middle">M</text>
+          </g>
+        </g>
+
+        <!-- Filtre -->
+        <g class="equipement">
+          <rect x="655" y="248" width="70" height="164" rx="14" fill="url(#grad-cuve)" stroke="#9aa7b4" stroke-width="3" filter="url(#ombre)"/>
+          <line x1="655" y1="300" x2="725" y2="300" stroke="#dde3e9" stroke-width="2"/>
+          <text x="690" y="335" class="t-equip-v" text-anchor="middle">FILTRE</text>
+        </g>
+
+        <!-- Nature2 (chloration) -->
+        <g class="equipement">
+          <rect x="787" y="270" width="56" height="120" rx="28" fill="url(#grad-cuve)" stroke="#9aa7b4" stroke-width="3" filter="url(#ombre)"/>
+          <text x="815" y="334" class="t-equip-v" text-anchor="middle">Nature2</text>
+        </g>
+
+        <!-- Source d'alimentation d'eau -->
+        <g class="equipement">
+          <path d="M415,572 H505 L490,536 H430 Z" fill="url(#grad-cuve)" stroke="#9aa7b4" stroke-width="3" filter="url(#ombre)"/>
+          <text x="460" y="560" class="t-source" text-anchor="middle">Alim. d'eau</text>
+        </g>
+
+        <!-- ===== Valves (symboles « nœud papillon » actionnés) ===== -->
+        <!-- Écumoire (horizontale) -->
+        <g id="valve-ecumoire" class="valve" data-orient="h" data-cx="350" data-cy="250">
+          <line class="tige" x1="350" y1="250" x2="350" y2="222"/>
+          <circle class="actionneur" cx="350" cy="216" r="7"/>
+          <polygon class="corps" points="326,233 326,267 350,250"/>
+          <polygon class="corps" points="374,233 374,267 350,250"/>
+          <text x="350" y="200" class="t-valve" text-anchor="middle">Écumoire</text>
+          <text id="pct-ecumoire" x="350" y="290" class="t-pct" text-anchor="middle">—</text>
+        </g>
+        <!-- Drain de fond (horizontale) -->
+        <g id="valve-drain" class="valve" data-orient="h" data-cx="350" data-cy="410">
+          <line class="tige" x1="350" y1="410" x2="350" y2="382"/>
+          <circle class="actionneur" cx="350" cy="376" r="7"/>
+          <polygon class="corps" points="326,393 326,427 350,410"/>
+          <polygon class="corps" points="374,393 374,427 350,410"/>
+          <text x="350" y="360" class="t-valve" text-anchor="middle">Drain de fond</text>
+          <text id="pct-drain" x="350" y="450" class="t-pct" text-anchor="middle">—</text>
+        </g>
+        <!-- Alimentation (verticale) -->
+        <g id="valve-alimentation" class="valve" data-orient="v" data-cx="460" data-cy="470">
+          <line class="tige" x1="460" y1="470" x2="432" y2="470"/>
+          <circle class="actionneur" cx="426" cy="470" r="7"/>
+          <polygon class="corps" points="443,446 477,446 460,470"/>
+          <polygon class="corps" points="443,494 477,494 460,470"/>
+          <text x="486" y="466" class="t-valve" text-anchor="start">Alimentation</text>
+          <text id="pct-alimentation" x="486" y="484" class="t-pct" text-anchor="start">—</text>
+        </g>
+        <!-- Retour piscine (horizontale, sur l'entête) -->
+        <g id="valve-retour" class="valve" data-orient="h" data-cx="560" data-cy="140">
+          <line class="tige" x1="560" y1="140" x2="560" y2="112"/>
+          <circle class="actionneur" cx="560" cy="106" r="7"/>
+          <polygon class="corps" points="536,123 536,157 560,140"/>
+          <polygon class="corps" points="584,123 584,157 560,140"/>
+          <text x="560" y="92" class="t-valve" text-anchor="middle">Retour piscine</text>
+          <text id="pct-retour" x="600" y="145" class="t-pct" text-anchor="start">—</text>
+        </g>
+      </svg>
+    </div>
+    <div class="schema-legende">
+      <span><i class="pastille pl-ouverte"></i> Ouverte</span>
+      <span><i class="pastille pl-partielle"></i> Partielle</span>
+      <span><i class="pastille pl-fermee"></i> Fermée</span>
+      <span><i class="pastille pl-mouv"></i> En mouvement</span>
+      <span><i class="pastille pl-flux"></i> Débit d'eau</span>
+    </div>
+  </section>
+
   <!-- ===================== État du matériel ===================== -->
   <section>
     <h2>État du matériel <span class="aide">— position <em>estimée</em> (boucle ouverte, sans capteur)</span></h2>
@@ -36,6 +189,17 @@
       <button class="btn bleu"   data-sequence="ajout_eau">Ajout d'eau (1 h)</button>
     </div>
     <button id="btn-arret" class="btn arret">⛔ ARRÊT D'URGENCE</button>
+
+    <div id="timeline-section" class="timeline-section" hidden>
+      <h3 id="timeline-titre"></h3>
+      <div class="timeline">
+        <div class="timeline-barre">
+          <div id="timeline-progression" class="timeline-progression"></div>
+        </div>
+        <div id="timeline-jalons" class="timeline-jalons"></div>
+      </div>
+      <div id="timeline-temps" class="timeline-temps"></div>
+    </div>
   </section>
 
   <!-- ===================== Mode manuel ===================== -->

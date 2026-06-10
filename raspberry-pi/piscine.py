@@ -427,6 +427,61 @@ SEQUENCES = {
 }
 
 
+# ===================== Timeline (frise chronologique) =====================
+#
+# Calcule, à partir de la configuration courante, les jalons (nom + instant en
+# secondes depuis le début) d'une séquence. Sert uniquement à l'affichage côté
+# interface web (frise + barre de progression) : les valeurs reproduisent
+# l'enchaînement réel des `urgence.attendre(...)` des fonctions ci-dessus.
+
+def timeline_sequence(nom, config):
+    """Renvoie {"duree_totale_s": float, "etapes": [{"t": float, "nom": str}, ...]}
+    pour la séquence `nom`, ou None si le nom est inconnu."""
+    course_s = config.course_complete_ms / 1000
+
+    if nom == "demarrage":
+        etapes = [
+            {"t": 0.0, "nom": "Ouverture valves"},
+            {"t": course_s, "nom": "Démarrage moteur"},
+        ]
+        duree = course_s
+
+    elif nom == "priming":
+        p = config.priming
+        t = 0.0
+        etapes = [{"t": t, "nom": "Amorçage initial"}]
+        t += p["amorcage_initial_s"]
+        etapes.append({"t": t, "nom": "Ouverture retour"})
+        t += course_s
+        etapes.append({"t": t, "nom": "Démarrage moteur"})
+        t += p["delai_fermeture_alimentation_s"]
+        etapes.append({"t": t, "nom": "Fermeture alimentation"})
+        t += course_s
+        etapes.append({"t": t, "nom": "Stabilisation"})
+        t += p["stabilisation_s"]
+        etapes.append({"t": t, "nom": f"Priming drain ({int(p['nb_cycles'])}x)"})
+        t += p["nb_cycles"] * (p["impulsion_ouverture_ms"] + p["impulsion_fermeture_ms"]) / 1000
+        etapes.append({"t": t, "nom": "Drain ouvert"})
+        t += course_s
+        duree = t
+
+    elif nom == "ajout_eau":
+        a = config.ajout_eau
+        t = 0.0
+        etapes = [{"t": t, "nom": "Ouverture ~10 %"}]
+        t += a["impulsion_ouverture_ms"] / 1000
+        etapes.append({"t": t, "nom": "Maintien ~10 %"})
+        t += a["duree_maintien_s"]
+        etapes.append({"t": t, "nom": "Fermeture alimentation"})
+        t += course_s
+        duree = t
+
+    else:
+        return None
+
+    return {"duree_totale_s": duree, "etapes": etapes}
+
+
 # ===================== Orchestration =====================
 
 class Orchestrateur:
@@ -442,6 +497,8 @@ class Orchestrateur:
         self.etat = EtatSysteme()
         self.urgence = GestionnaireUrgence()
         self._thread_sequence = None
+        self._sequence_nom = None
+        self._sequence_debut = 0.0
         self._verrou_commande = threading.Lock()
         self._flashage = False
 
@@ -458,9 +515,12 @@ class Orchestrateur:
         return t is not None and t.is_alive()
 
     def etat_courant(self):
+        en_cours = self._sequence_en_cours()
         return {
             "etat": self.etat.obtenir(),
-            "sequence_en_cours": self._sequence_en_cours(),
+            "sequence_en_cours": en_cours,
+            "sequence_nom": self._sequence_nom if en_cours else None,
+            "sequence_ecoulee_s": round(time.monotonic() - self._sequence_debut, 1) if en_cours else 0,
             "flashage_en_cours": self._flashage,
             "valves": self.arduino.suivi.etat(),
             "moteur": self.arduino.moteur_actif,
@@ -469,9 +529,11 @@ class Orchestrateur:
 
     # --- Lancement / arrêt des séquences ---
 
-    def _lancer(self, fonction_sequence, etat_si_succes=None):
+    def _lancer(self, nom, fonction_sequence, etat_si_succes=None):
         """Exécute une séquence dans un thread dédié, en suivant son issue."""
         self.urgence.reinitialiser()
+        self._sequence_nom = nom
+        self._sequence_debut = time.monotonic()
 
         def cible():
             try:
@@ -508,13 +570,13 @@ class Orchestrateur:
             if self._flashage or self._sequence_en_cours():
                 return
             if nom_bouton == "vert":
-                self._lancer(sequence_demarrage, etat_si_succes=EN_MARCHE)
+                self._lancer("demarrage", sequence_demarrage, etat_si_succes=EN_MARCHE)
             elif nom_bouton == "bleu":
                 # Comportement conditionnel (voir doc Boutons de contrôle)
                 if self.etat.obtenir() == EN_MARCHE:
-                    self._lancer(sequence_ajout_eau)
+                    self._lancer("ajout_eau", sequence_ajout_eau)
                 else:
-                    self._lancer(sequence_demarrage_avec_priming, etat_si_succes=EN_MARCHE)
+                    self._lancer("priming", sequence_demarrage_avec_priming, etat_si_succes=EN_MARCHE)
 
     def lancer_sequence(self, nom):
         """Déclenche explicitement une séquence depuis l'interface web.
@@ -529,11 +591,11 @@ class Orchestrateur:
             if nom == "ajout_eau" and self.etat.obtenir() != EN_MARCHE:
                 return False, "Le système doit être en marche pour l'ajout d'eau"
             if nom == "demarrage":
-                self._lancer(sequence_demarrage, etat_si_succes=EN_MARCHE)
+                self._lancer("demarrage", sequence_demarrage, etat_si_succes=EN_MARCHE)
             elif nom == "priming":
-                self._lancer(sequence_demarrage_avec_priming, etat_si_succes=EN_MARCHE)
+                self._lancer("priming", sequence_demarrage_avec_priming, etat_si_succes=EN_MARCHE)
             elif nom == "ajout_eau":
-                self._lancer(sequence_ajout_eau)
+                self._lancer("ajout_eau", sequence_ajout_eau)
             else:
                 return False, f"Séquence inconnue : « {nom} »"
             return True, f"Séquence « {nom} » lancée"

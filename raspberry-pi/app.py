@@ -29,7 +29,7 @@ from flask import Flask, jsonify, render_template, request
 
 import config as config_module
 import flashage
-from piscine import LiaisonArduino, Orchestrateur
+from piscine import LiaisonArduino, Orchestrateur, timeline_sequence
 
 PORT_WEB = int(os.environ.get("PISCINE_PORT_WEB", "8080"))
 
@@ -94,6 +94,16 @@ def api_config_ecrire():
 def api_sequence(nom):
     succes, message = orchestrateur.lancer_sequence(nom)
     return _reponse(succes, message)
+
+
+@app.get("/api/sequence/<nom>/timeline")
+def api_sequence_timeline(nom):
+    """Jalons (nom + instant en secondes) calculés depuis la config courante,
+    pour afficher la frise chronologique + barre de progression côté UI."""
+    timeline = timeline_sequence(nom, orchestrateur.config)
+    if timeline is None:
+        return _reponse(False, f"Séquence inconnue : « {nom} »", 404)
+    return jsonify(timeline)
 
 
 @app.post("/api/arret")

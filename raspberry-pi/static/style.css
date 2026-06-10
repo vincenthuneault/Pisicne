@@ -2,6 +2,7 @@
   --vert: #2e9e4f;
   --bleu: #2b7bd1;
   --rouge: #d23b3b;
+  --orange: #e0a020;
   --gris: #555;
   --fond: #f4f6f8;
   --carte: #ffffff;
@@ -58,6 +59,88 @@ section {
 h2 { margin-top: 0; font-size: 1.1rem; }
 
 .aide { color: var(--gris); font-size: 0.85rem; font-weight: 400; }
+
+/* --- Schéma de procédé (P&ID animé) --- */
+.section-schema { max-width: 920px; }
+.schema-cadre {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+#schema { width: 100%; height: auto; display: block; }
+
+/* Tuyauterie de base */
+#schema .tuyau { stroke: #aab6c2; stroke-width: 7; }
+
+/* Débit animé : invisible au repos, dash animé quand .actif */
+#schema .flux {
+  stroke: url(#grad-eau);
+  stroke: #2b7bd1;
+  stroke-width: 7;
+  stroke-dasharray: 13 15;
+  stroke-dashoffset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+#schema .flux.actif {
+  opacity: 0.95;
+  animation: flux-defile 0.8s linear infinite;
+}
+@keyframes flux-defile { to { stroke-dashoffset: -28; } }
+
+/* Textes du schéma */
+#schema text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+#schema .t-titre   { font-size: 17px; font-weight: 700; letter-spacing: 1px; }
+#schema .t-sous    { font-size: 11px; fill: var(--gris); }
+#schema .t-equip   { font-size: 12px; font-weight: 700; letter-spacing: 1px; fill: var(--texte); }
+#schema .t-equip-v { font-size: 12px; font-weight: 700; letter-spacing: 1px; fill: var(--texte); }
+#schema .t-m       { font-size: 18px; font-weight: 800; fill: var(--gris); }
+#schema .t-source  { font-size: 11px; font-weight: 600; fill: var(--texte); }
+#schema .t-valve   { font-size: 12px; font-weight: 600; fill: var(--texte); }
+#schema .t-pct     { font-size: 12px; font-weight: 700; fill: var(--gris); }
+
+/* Valves — symbole nœud papillon actionné */
+#schema .valve .tige { stroke: #9aa7b4; stroke-width: 3; }
+#schema .valve .actionneur { fill: #fff; stroke: #9aa7b4; stroke-width: 3; }
+#schema .valve .corps {
+  stroke: #7d8a97; stroke-width: 1.5; stroke-linejoin: round;
+  fill: #aab6c2;
+  transition: fill 0.4s ease;
+}
+/* États (classe posée par le JS) */
+#schema .valve.fermee    .corps { fill: #aab6c2; }
+#schema .valve.partielle .corps { fill: var(--orange, #e0a020); }
+#schema .valve.partielle .actionneur { stroke: var(--orange, #e0a020); }
+#schema .valve.ouverte   .corps { fill: var(--vert); }
+#schema .valve.ouverte   .actionneur { stroke: var(--vert); }
+#schema .valve.bouge     .actionneur { animation: pulse-act 1s ease-in-out infinite; }
+@keyframes pulse-act { 0%,100% { r: 7; } 50% { r: 10; } }
+
+/* Moteur + rotor de pompe */
+#schema #moteur .t-m { transition: fill 0.4s ease; }
+#schema #moteur.on circle { stroke: var(--vert); }
+#schema #moteur.on .t-m { fill: var(--vert); }
+#schema #pompe.tourne .rotor {
+  transform-box: fill-box; transform-origin: center;
+  animation: rotor-spin 0.9s linear infinite;
+}
+@keyframes rotor-spin { to { transform: rotate(360deg); } }
+
+#schema .vague { animation: vague-glisse 4s linear infinite; }
+@keyframes vague-glisse { to { transform: translateX(40px); } }
+
+/* Légende */
+.schema-legende {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem;
+  margin-top: 0.8rem; font-size: 0.8rem; color: var(--gris);
+}
+.schema-legende span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.pastille { width: 0.85rem; height: 0.85rem; border-radius: 50%; display: inline-block; }
+.pl-ouverte   { background: var(--vert); }
+.pl-partielle { background: #e0a020; }
+.pl-fermee    { background: #aab6c2; }
+.pl-mouv      { background: #fff; border: 2px solid var(--vert); }
+.pl-flux      { background: var(--bleu); border-radius: 2px; width: 1.2rem; height: 0.4rem; }
 
 /* --- État du matériel --- */
 .valve-etat {
@@ -121,6 +204,61 @@ h2 { margin-top: 0; font-size: 1.1rem; }
 }
 
 .boutons-controle { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* --- Timeline de séquence (frise + barre de progression) --- */
+.timeline-section { margin-top: 1.5rem; }
+.timeline-section h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.timeline { position: relative; margin: 2.6rem 0.5rem 2.6rem; }
+.timeline-barre {
+  position: relative;
+  height: 6px;
+  background: #e6eaee;
+  border: 1px solid var(--bordure);
+  border-radius: 3px;
+}
+.timeline-progression {
+  position: absolute;
+  top: -1px; bottom: -1px; left: 0;
+  width: 0%;
+  background: var(--vert);
+  border-radius: 3px;
+  transition: width 1s linear;
+}
+.timeline-jalons { position: relative; height: 0; }
+.jalon {
+  position: absolute;
+  top: -6px;
+  transform: translateX(-50%);
+}
+.jalon:first-child { transform: translateX(0); }
+.jalon:last-child { transform: translateX(-100%); }
+.jalon-point {
+  display: block;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--bordure);
+  margin: 0 auto;
+  transition: background 0.3s, border-color 0.3s;
+}
+.jalon.atteint .jalon-point { background: var(--vert); border-color: var(--vert); }
+.jalon-label {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5.5rem;
+  font-size: 0.7rem;
+  line-height: 1.15;
+  color: var(--gris);
+  text-align: center;
+  transition: color 0.3s;
+}
+.jalon:first-child .jalon-label { left: 0; transform: none; text-align: left; }
+.jalon:last-child .jalon-label { left: auto; right: 0; transform: none; text-align: right; }
+.jalon:nth-child(even) .jalon-label { top: auto; bottom: 20px; }
+.jalon.atteint .jalon-label { color: var(--texte); font-weight: 600; }
+.timeline-temps { text-align: center; font-size: 0.8rem; color: var(--gris); }
 
 .btn-mini {
   border: 1px solid var(--bordure);

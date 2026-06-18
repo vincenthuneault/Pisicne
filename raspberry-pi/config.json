@@ -10,6 +10,6 @@
   },
   "ajout_eau": {
     "impulsion_ouverture_ms": 1000,
-    "duree_maintien_s": 3600
+    "duree_maintien_s": 36
   }
 }

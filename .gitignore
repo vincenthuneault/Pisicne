@@ -9,3 +9,11 @@ raspberry-pi/firmware_recu/
 # Obsidian — état d'interface par utilisateur (UI volatile)
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
+
+# Journal du serveur web (runtime, propre à chaque machine)
+serveur.log
+raspberry-pi/serveur.log
+
+# draw.io — fichiers de sauvegarde temporaires
+*.bkp
+.$*

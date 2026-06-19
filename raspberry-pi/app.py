@@ -35,6 +35,11 @@ from piscine import LiaisonArduino, Orchestrateur, timeline_sequence
 PORT_WEB = int(os.environ.get("PISCINE_PORT_WEB", "8080"))
 
 app = Flask(__name__)
+# Recharge les templates Jinja modifiés sans redémarrer le processus : sans ça,
+# Flask garde la version compilée en mémoire (debug off) et un déploiement
+# « frontend seul » (git pull) ne serait pas pris en compte tant que l'app
+# tourne. Les fichiers statiques (JS/CSS), eux, sont déjà relus du disque.
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 
 @app.after_request

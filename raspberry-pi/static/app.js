@@ -206,10 +206,19 @@ function majSchema(etat) {
 
   // --- Débit : quels segments transportent de l'eau en ce moment ---
   const ouvert = (nom) => ((valves[nom] || {}).position || 0) > SEUIL_OUVERT;
+  const alimentation       = ouvert("alimentation");  // injection (priming / ajout d'eau)
+
+  // Aspiration depuis la piscine (écumoire / drain → pompe) : seulement quand
+  // le moteur tourne (c'est lui qui aspire). C'est le « bord » qui s'active au
+  // démarrage du moteur.
   const aspirationEcumoire = moteurOn && ouvert("ecumoire");
   const aspirationDrain    = moteurOn && ouvert("drain");
-  const refoulement        = moteurOn;  // pompe -> filtre -> nature2 -> retour
-  const alimentation       = ouvert("alimentation");  // injection (priming / ajout d'eau)
+
+  // Refoulement (pompe → filtre → nature2 → retour → piscine) : en marche
+  // normale (moteur). MAIS aussi pendant le PRIMING : avant le démarrage du
+  // moteur, l'eau injectée par l'alimentation est poussée pompe → piscine —
+  // à condition que le retour soit ouvert (sinon l'eau ne peut pas sortir).
+  const refoulement        = moteurOn || (alimentation && ouvert("retour"));
 
   const flux = {
     "flux-ecumoire-in": aspirationEcumoire,

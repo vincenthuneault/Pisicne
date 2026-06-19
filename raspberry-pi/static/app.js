@@ -237,6 +237,13 @@ function majSchema(etat) {
     const el = document.getElementById(id);
     if (el) el.classList.toggle("actif", actif);
   }
+
+  // Mode « priming » : de l'eau est poussée vers la piscine alors que le moteur
+  // est encore ARRÊTÉ (injection par l'alimentation). On colore ce flux en ambre
+  // pour le distinguer de la circulation normale (bleu). Au démarrage du moteur,
+  // le flux repasse au bleu ET l'aspiration côté piscine s'allume → le flux
+  // « change de bord », de façon bien visible.
+  svg.classList.toggle("mode-priming", refoulement && !moteurOn);
 }
 
 // ===================== Timeline de séquence (frise + progression) =====================

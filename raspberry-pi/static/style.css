@@ -88,6 +88,10 @@ h2 { margin-top: 0; font-size: 1.1rem; }
 }
 @keyframes flux-defile { to { stroke-dashoffset: -28; } }
 
+/* Priming : tant que le moteur n'est pas parti, le flux poussé vers la piscine
+   est ambre (amorçage) pour le distinguer de la circulation normale (bleu). */
+#schema.mode-priming .flux.actif { stroke: var(--orange); }
+
 /* Textes du schéma */
 #schema text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 #schema .t-titre   { font-size: 17px; font-weight: 700; letter-spacing: 1px; }

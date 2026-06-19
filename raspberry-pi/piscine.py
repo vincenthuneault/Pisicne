@@ -122,6 +122,20 @@ class SuiviValves:
         with self._verrou:
             self._figer(self._v[nom], maintenant)
 
+    def definir_position(self, nom, position_0_1):
+        """Force la position estimée (0..1) d'une valve, à l'arrêt.
+
+        Utilisé à la récupération d'état au démarrage : après un homing complet
+        dans un sens (butée mécanique), la position réelle est CERTAINE."""
+        if nom not in self._v:
+            return
+        with self._verrou:
+            e = self._v[nom]
+            e["pos"] = max(0.0, min(1.0, position_0_1))
+            e["dir"] = "arret"
+            e["t0"] = 0.0
+            e["t_fin"] = 0.0
+
     def etat(self):
         """{nom: {"position": 0..100, "mouvement": "ouverture|fermeture|arret"}}."""
         maintenant = time.monotonic()
@@ -166,6 +180,7 @@ class LiaisonArduino:
         self.simulation = simulation
         self.evenements = queue.Queue()
         self._reponses_boutons = queue.Queue()
+        self._reponses_sorties = queue.Queue()
         self.suivi = SuiviValves()
         self.moteur_actif = False
         self.dernier_etat_boutons = {"vert": False, "rouge": False}
@@ -226,6 +241,8 @@ class LiaisonArduino:
                 self.evenements.put(message)
             elif "boutons" in message:
                 self._reponses_boutons.put(message["boutons"])
+            elif "sorties" in message:
+                self._reponses_sorties.put(message["sorties"])
 
     def _envoyer(self, commande):
         if self.simulation:
@@ -252,6 +269,15 @@ class LiaisonArduino:
         self.suivi.arreter(nom_valve)
         self._envoyer({"cmd": "valve_arreter", "valve": nom_valve})
 
+    def confirmer_valve(self, nom_valve, ouvert):
+        """Asserte l'état ENGAGÉ d'une valve auprès de l'Arduino (drapeau 11/00).
+
+        À envoyer après une ouverture/fermeture COMPLÈTE (jamais après une
+        impulsion partielle). Le firmware fige alors le repos de la valve sur ce
+        drapeau (frein 11 = ouvert, neutre 00 = fermé), ce qui rend possible la
+        récupération d'état au redémarrage du Pi."""
+        self._envoyer({"cmd": "valve_confirmer", "valve": nom_valve, "ouvert": bool(ouvert)})
+
     def demarrer_moteur(self):
         self.moteur_actif = True
         self._envoyer({"cmd": "moteur_demarrer"})
@@ -277,6 +303,23 @@ class LiaisonArduino:
             etat = self._reponses_boutons.get(timeout=timeout)
             self.dernier_etat_boutons = etat
             return etat
+        except queue.Empty:
+            return None
+
+    def lire_etat_sorties(self, timeout=2):
+        """Demande et renvoie l'état des sorties de l'Arduino, ou None.
+
+        Forme : {"valves": {nom: {"ouvert": bool, "mouvement": str}},
+        "moteur": bool, "moteur_demande": bool, "circulation_ok": bool}.
+        Sert à la récupération d'état au démarrage (voir Orchestrateur)."""
+        if self.simulation:
+            return None
+        # Vider les réponses obsolètes éventuelles
+        while not self._reponses_sorties.empty():
+            self._reponses_sorties.get_nowait()
+        self._envoyer({"cmd": "etat_sorties"})
+        try:
+            return self._reponses_sorties.get(timeout=timeout)
         except queue.Empty:
             return None
 
@@ -339,11 +382,12 @@ def sequence_demarrage(arduino, urgence, config):
     """Bouton vert : ouvrir les valves de filtration (PAS l'alimentation), puis moteur."""
     course_ms = config.course_complete_ms
     # Écumoire, drain de fond, retour — mais PAS l'alimentation (sinon la
-    # réserve d'eau se vide).
+    # réserve d'eau se vide). Confirmation « ouvert » : ouverture complète.
     for nom in ("ecumoire", "drain", "retour"):
         arduino.ouvrir_valve(nom, course_ms)
+        arduino.confirmer_valve(nom, True)
     urgence.attendre(course_ms / 1000)
-    arduino.demarrer_moteur()
+    arduino.demarrer_moteur()  # l'interlock firmware l'autorise (entrée + retour ouverts)
 
 
 def sequence_demarrage_avec_priming(arduino, urgence, config):
@@ -359,22 +403,26 @@ def sequence_demarrage_avec_priming(arduino, urgence, config):
 
     # 1) Amorçage initial : écumoire grande ouverte + injection d'eau (alimentation)
     arduino.ouvrir_valve("ecumoire", course_ms)
+    arduino.confirmer_valve("ecumoire", True)
     arduino.ouvrir_valve("alimentation", course_ms)
+    arduino.confirmer_valve("alimentation", True)
     urgence.attendre(p["amorcage_initial_s"])
 
     # 2) Ouverture complète de la valve de retour vers la piscine
     #    (alimentation toujours ouverte)
     arduino.ouvrir_valve("retour", course_ms)
+    arduino.confirmer_valve("retour", True)
     urgence.attendre(course_ms / 1000)
 
     # 3) Démarrage du moteur (retour complètement ouvert, alimentation toujours ouverte)
-    arduino.demarrer_moteur()
+    arduino.demarrer_moteur()  # interlock OK : écumoire + retour ouverts
 
     # 3b) Maintenir l'alimentation ouverte un délai après le démarrage du moteur
     urgence.attendre(p["delai_fermeture_alimentation_s"])
 
     # 3c) Refermer l'alimentation
     arduino.fermer_valve("alimentation", course_ms)
+    arduino.confirmer_valve("alimentation", False)
     urgence.attendre(course_ms / 1000)
 
     # 4) Stabilisation, moteur en marche
@@ -390,6 +438,7 @@ def sequence_demarrage_avec_priming(arduino, urgence, config):
 
     # 6) Ouverture complète du drain de fond — système fonctionnel
     arduino.ouvrir_valve("drain", course_ms)
+    arduino.confirmer_valve("drain", True)
     urgence.attendre(course_ms / 1000)
 
 
@@ -403,20 +452,23 @@ def sequence_arret(arduino, config):
     arduino.arreter_moteur()
     for nom in NOMS_VALVES:
         arduino.fermer_valve(nom, course_ms)
+        arduino.confirmer_valve(nom, False)
 
 
 def sequence_ajout_eau(arduino, urgence, config):
     """Bouton bleu, système en marche : alimentation à ~10 % pendant 1 heure."""
     a = config.ajout_eau
-    # Impulsion courte ≈ 10 % d'ouverture ; le firmware Arduino arrête
-    # automatiquement le mouvement une fois la durée écoulée, figeant la valve
-    # à ce degré d'ouverture (polarité 0/0).
+    # Impulsion courte ≈ 10 % d'ouverture. PARTIEL : aucune confirmation — le
+    # drapeau engagé de l'alimentation reste « fermé », si bien qu'une
+    # récupération d'état refermerait l'alimentation (réserve préservée).
     arduino.ouvrir_valve("alimentation", a["impulsion_ouverture_ms"])
     urgence.attendre(a["impulsion_ouverture_ms"] / 1000)
 
     urgence.attendre(a["duree_maintien_s"])  # maintien à ~10 %
 
+    # Fermeture complète : on confirme l'état « fermé ».
     arduino.fermer_valve("alimentation", config.course_complete_ms)
+    arduino.confirmer_valve("alimentation", False)
 
 
 # Nom logique → fonction de séquence (déclenchables par l'orchestrateur / le web).
@@ -634,12 +686,23 @@ class Orchestrateur:
                 return False, f"Action inconnue : « {action} »"
             return True, f"{action} {valve} ({int(duree_ms)} ms)"
 
+    def _circulation_estimee_ouverte(self):
+        """Double-check côté Pi de l'interlock anti-deadhead (l'interlock dur
+        est dans le firmware) : au moins une entrée (écumoire/drain) et le retour
+        estimés ouverts (> 50 % d'après le suivi de position)."""
+        v = self.arduino.suivi.etat()
+        ouverte = lambda nom: v.get(nom, {}).get("position", 0) > 50
+        return (ouverte("ecumoire") or ouverte("drain")) and ouverte("retour")
+
     def commande_manuelle_moteur(self, action):
         with self._verrou_commande:
             ok, message = self._manuel_autorise()
             if not ok:
                 return False, message
             if action == "demarrer":
+                if not self._circulation_estimee_ouverte():
+                    return False, ("Sécurité : démarrage moteur refusé — il faut au moins "
+                                   "une entrée (écumoire/drain) ET le retour ouverts (anti-deadhead)")
                 self.arduino.demarrer_moteur()
             elif action == "arreter":
                 self.arduino.arreter_moteur()
@@ -685,9 +748,61 @@ class Orchestrateur:
                 self.traiter_bouton(message.get("nom"))
 
     def arret_initial(self):
-        """Sécurité au démarrage : repart d'un état sûr connu (système éteint)."""
+        """Sécurité : repart d'un état sûr connu (système éteint, tout fermé)."""
         sequence_arret(self.arduino, self.config)
         self.etat.definir(ETEINT)
+
+    def recuperer_etat(self):
+        """Récupération au démarrage : adopte l'état réel d'après l'Arduino.
+
+        Au lieu de tout couper (arret_initial), on interroge l'Arduino sur l'état
+        ENGAGÉ de ses sorties (drapeaux 11/00, conservés en RAM si l'auto-reset
+        est désactivé, sinon restaurés depuis l'EEPROM). On RE-POUSSE ensuite
+        chaque valve à fond dans le sens reçu : en boucle ouverte, atteindre la
+        butée mécanique est le seul moyen de regagner une position CERTAINE. On
+        en déduit enfin l'état du système.
+
+        Sécurité :
+        - Repli sur arret_initial() si l'Arduino ne répond pas.
+        - Le moteur n'est repris QUE s'il était demandé (l'Arduino ne conserve
+          pas la demande moteur à travers un reset → repli sûr « éteint »).
+          L'interlock firmware empêche de toute façon tout deadhead.
+        """
+        course_ms = self.config.course_complete_ms
+        sorties = self.arduino.lire_etat_sorties()
+        if not sorties or "valves" not in sorties:
+            self.arret_initial()
+            return
+
+        valves = sorties["valves"]
+        cibles = {nom: bool(valves.get(nom, {}).get("ouvert", False)) for nom in NOMS_VALVES}
+
+        # Homing : re-pousser chaque valve à fond dans le sens de son drapeau.
+        for nom, ouvert in cibles.items():
+            if ouvert:
+                self.arduino.ouvrir_valve(nom, course_ms)
+                self.arduino.confirmer_valve(nom, True)
+            else:
+                self.arduino.fermer_valve(nom, course_ms)
+                self.arduino.confirmer_valve(nom, False)
+
+        self.urgence.reinitialiser()
+        try:
+            self.urgence.attendre(course_ms / 1000)
+        except Interruption:
+            pass
+
+        # Positions désormais certaines (butées atteintes).
+        for nom, ouvert in cibles.items():
+            self.arduino.suivi.definir_position(nom, 1.0 if ouvert else 0.0)
+
+        # Déduire l'état système.
+        moteur = bool(sorties.get("moteur_demande") or sorties.get("moteur"))
+        if moteur:
+            self.arduino.demarrer_moteur()  # interlock firmware = garde-fou
+            self.etat.definir(EN_MARCHE)
+        else:
+            self.etat.definir(ETEINT)
 
 
 def main():
@@ -695,7 +810,7 @@ def main():
     arduino = LiaisonArduino()
     orchestrateur = Orchestrateur(arduino)
     threading.Thread(target=orchestrateur.moniteur_boutons, daemon=True).start()
-    orchestrateur.arret_initial()
+    orchestrateur.recuperer_etat()
     orchestrateur.boucle()
 
 

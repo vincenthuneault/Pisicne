@@ -173,8 +173,10 @@ def demarrer():
     threading.Thread(target=orchestrateur.boucle, daemon=True).start()
     # Sonde périodique de l'état des boutons (pour l'affichage dans l'UI).
     threading.Thread(target=orchestrateur.moniteur_boutons, daemon=True).start()
-    # Sécurité au démarrage : repartir d'un état sûr connu (système éteint).
-    orchestrateur.arret_initial()
+    # Récupération d'état : on adopte l'état réel rapporté par l'Arduino (avec
+    # homing pour une position certaine) au lieu de tout couper. Repli sûr sur
+    # arret_initial() si l'Arduino ne répond pas. Voir Orchestrateur.recuperer_etat.
+    orchestrateur.recuperer_etat()
 
 
 if __name__ == "__main__":

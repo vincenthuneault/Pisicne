@@ -352,13 +352,5 @@ form input[type="number"] { padding: 0.4rem; border: 1px solid var(--bordure); b
 .alerte.attention { background: #fff5e0; color: #7a5200; border-color: var(--orange); }
 .alerte.erreur    { background: #fde8e8; color: #8a1f1f; border-color: var(--rouge); }
 
-/* --- Chloration --- */
-#section-chlore .chlore-infos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-  font-size: 0.9rem;
-  margin-bottom: 0.9rem;
-}
-#section-chlore .chlore-restant { font-weight: 600; color: var(--vert); }
-#section-chlore .chlore-restant.du { color: var(--rouge); }
+/* --- Chloration (ligne d'info dans « État du matériel ») --- */
+#chlore-ligne.du { background: var(--orange); color: #fff; }

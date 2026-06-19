@@ -114,16 +114,17 @@ async function rafraichirEtat() {
 // ===================== Chloration =====================
 
 function majChlore(c) {
-  const dernier = document.getElementById("chlore-dernier");
-  const prochain = document.getElementById("chlore-prochain");
-  const restant = document.getElementById("chlore-restant");
-
-  dernier.textContent = "Dernier ajout : " + (c.jamais ? "jamais" : formatDate(c.dernier_ajout_ts));
-  prochain.textContent = "Prochaine échéance : " + (c.jamais ? "—" : formatDate(c.prochaine_echeance_ts));
-  restant.textContent = c.du
-    ? (c.jamais ? "à enregistrer" : "⚠️ chlore à ajouter (" + formatRestant(c.restant_s) + ")")
-    : "prochaine " + formatRestant(c.restant_s);
-  restant.classList.toggle("du", !!c.du);
+  // Info sur une seule ligne (dans « État du matériel »)
+  const ligne = document.getElementById("chlore-ligne");
+  if (c.jamais) {
+    ligne.textContent = "🧪 Chloration : aucun ajout enregistré";
+  } else if (c.du) {
+    ligne.textContent = "🧪 Chloration : à ajouter (" + formatRestant(c.restant_s) + ")";
+  } else {
+    ligne.textContent = "🧪 Chloration : prochaine " + formatRestant(c.restant_s)
+      + " · le " + formatDate(c.prochaine_echeance_ts);
+  }
+  ligne.classList.toggle("du", !!c.du);
 
   // Bannière d'alerte en haut de page
   if (c.du) {

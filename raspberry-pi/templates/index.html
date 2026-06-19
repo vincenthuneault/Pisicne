@@ -20,17 +20,6 @@
        Remplie par le JS (rendreAlertes). Masquée s'il n'y a rien. -->
   <div id="alertes" class="alertes" hidden></div>
 
-  <!-- ===================== Chloration ===================== -->
-  <section id="section-chlore">
-    <h2>Chloration <span class="aide">— rappel d'ajout de chlore</span></h2>
-    <div class="chlore-infos">
-      <span id="chlore-dernier">Dernier ajout : —</span>
-      <span id="chlore-prochain">Prochaine échéance : —</span>
-      <span id="chlore-restant" class="chlore-restant">—</span>
-    </div>
-    <button id="btn-chlore" class="btn vert">✅ J'ai ajouté du chlore</button>
-  </section>
-
   <!-- ===================== Schéma de procédé (P&ID animé) ===================== -->
   <section class="section-schema">
     <h2>Schéma de procédé <span class="aide">— vue en direct du circuit (animée par l'état estimé)</span></h2>
@@ -210,6 +199,7 @@
       <span class="indic" id="indic-moteur">Moteur (relais) : —</span>
       <span class="indic" id="indic-bvert">Bouton vert : —</span>
       <span class="indic" id="indic-brouge">Bouton rouge : —</span>
+      <span class="indic" id="chlore-ligne">🧪 Chloration : —</span>
     </div>
   </section>
 
@@ -221,6 +211,7 @@
       <button class="btn vert"   data-sequence="demarrage">Démarrage simple</button>
       <button class="btn bleu"   data-sequence="priming">Démarrage avec priming</button>
       <button class="btn bleu"   data-sequence="ajout_eau">Ajout d'eau (1 h)</button>
+      <button id="btn-chlore" class="btn">✅ J'ai ajouté du chlore</button>
     </div>
     <button id="btn-arret" class="btn arret">⛔ ARRÊT D'URGENCE</button>
 

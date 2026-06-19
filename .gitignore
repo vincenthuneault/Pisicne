@@ -14,6 +14,10 @@ raspberry-pi/firmware_recu/
 serveur.log
 raspberry-pi/serveur.log
 
+# État runtime de la chloration (date du dernier ajout, propre à la machine)
+etat_chlore.json
+raspberry-pi/etat_chlore.json
+
 # draw.io — fichiers de sauvegarde temporaires
 *.bkp
 .$*

@@ -26,6 +26,50 @@ function afficherResultat(res) {
   toast(msg, res.ok ? "succes" : "erreur");
 }
 
+// ===================== Zone d'alertes (haut de page) =====================
+//
+// Modèle simple : chaque alerte a un id stable (ex. "chlore", "offline").
+// setAlerte(id, message, type) ajoute/met à jour (message falsy = retire).
+
+const alertes = {};
+
+function setAlerte(id, message, type) {
+  if (message) alertes[id] = { message, type: type || "" };
+  else delete alertes[id];
+  rendreAlertes();
+}
+
+function rendreAlertes() {
+  const zone = document.getElementById("alertes");
+  const liste = Object.values(alertes);
+  if (!liste.length) {
+    zone.hidden = true;
+    zone.innerHTML = "";
+    return;
+  }
+  zone.hidden = false;
+  zone.innerHTML = liste
+    .map((a) => `<div class="alerte ${a.type}">${a.message}</div>`)
+    .join("");
+}
+
+// ===================== Formatage durées / dates =====================
+
+function formatDate(ts) {
+  if (!ts) return "—";
+  return new Date(ts * 1000).toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function formatRestant(s) {
+  if (s <= 0) return s < -3600 ? "en retard" : "maintenant";
+  const j = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (j > 0) return `dans ${j} j ${h} h`;
+  if (h > 0) return `dans ${h} h ${m} min`;
+  return `dans ${m} min`;
+}
+
 // ===================== État (polling) =====================
 
 let sequenceEnCours = false;
@@ -56,12 +100,45 @@ async function rafraichirEtat() {
 
     majEtatMateriel(etat);
     await majTimeline(etat);
+    if (etat.chlore) majChlore(etat.chlore);
 
     sequenceEnCours = etat.sequence_en_cours || etat.flashage_en_cours;
     majDisponibiliteManuel();
+    setAlerte("offline", null);  // connexion OK
   } catch (e) {
     document.getElementById("badge-etat").textContent = "Hors ligne";
+    setAlerte("offline", "⚠️ Hors ligne — pas de réponse du serveur", "erreur");
   }
+}
+
+// ===================== Chloration =====================
+
+function majChlore(c) {
+  const dernier = document.getElementById("chlore-dernier");
+  const prochain = document.getElementById("chlore-prochain");
+  const restant = document.getElementById("chlore-restant");
+
+  dernier.textContent = "Dernier ajout : " + (c.jamais ? "jamais" : formatDate(c.dernier_ajout_ts));
+  prochain.textContent = "Prochaine échéance : " + (c.jamais ? "—" : formatDate(c.prochaine_echeance_ts));
+  restant.textContent = c.du
+    ? (c.jamais ? "à enregistrer" : "⚠️ chlore à ajouter (" + formatRestant(c.restant_s) + ")")
+    : "prochaine " + formatRestant(c.restant_s);
+  restant.classList.toggle("du", !!c.du);
+
+  // Bannière d'alerte en haut de page
+  if (c.du) {
+    setAlerte("chlore", c.jamais
+      ? "🧪 Chloration : aucun ajout enregistré — pense à en mettre puis clique « J'ai ajouté du chlore »"
+      : "🧪 Chloration due — ajoute du chlore puis confirme avec « J'ai ajouté du chlore »", "attention");
+  } else {
+    setAlerte("chlore", null);
+  }
+
+  // Toast au passage « pas dû » → « dû »
+  if (c.du && majChlore._dernierDu === false) {
+    toast("🧪 Il est temps d'ajouter du chlore", "attention");
+  }
+  majChlore._dernierDu = !!c.du;
 }
 
 function majEtatMateriel(etat) {
@@ -253,6 +330,14 @@ document.getElementById("btn-arret").addEventListener("click", async () => {
   const res = await postJSON("/api/arret");
   afficherResultat(res);
   rafraichirEtat();
+});
+
+// ===================== Chloration =====================
+
+document.getElementById("btn-chlore").addEventListener("click", async () => {
+  const res = await postJSON("/api/chlore");
+  afficherResultat(res);
+  if (res.data && res.data.chlore) majChlore(res.data.chlore);
 });
 
 // ===================== Mode manuel =====================

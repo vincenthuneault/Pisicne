@@ -27,6 +27,7 @@ import threading
 
 from flask import Flask, jsonify, render_template, request
 
+import chlore
 import config as config_module
 import flashage
 from piscine import LiaisonArduino, Orchestrateur, timeline_sequence
@@ -64,7 +65,19 @@ def index():
 
 @app.get("/api/etat")
 def api_etat():
-    return jsonify(orchestrateur.etat_courant())
+    etat = orchestrateur.etat_courant()
+    etat["chlore"] = chlore.statut(orchestrateur.config.chlore["intervalle_jours"])
+    return jsonify(etat)
+
+
+# ===================== Chloration =====================
+
+@app.post("/api/chlore")
+def api_chlore_ajout():
+    """Signale un ajout de chlore : relance la minuterie de rappel."""
+    chlore.marquer_ajout()
+    statut = chlore.statut(orchestrateur.config.chlore["intervalle_jours"])
+    return jsonify({"ok": True, "message": "Ajout de chlore enregistré", "chlore": statut})
 
 
 # ===================== Paramètres =====================

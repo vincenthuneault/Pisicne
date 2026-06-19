@@ -34,6 +34,12 @@ DEFAUTS = {
         "impulsion_ouverture_ms": 1000,
         "duree_maintien_s": 3600,
     },
+    "chlore": {
+        # Intervalle (en jours) entre deux ajouts de chlore. Sert au rappel de
+        # chloration (voir chlore.py) : passé ce délai depuis le dernier ajout,
+        # l'interface affiche une alerte.
+        "intervalle_jours": 7,
+    },
 }
 
 # Champs entiers (nb de cycles) vs champs pouvant être décimaux (durées).
@@ -63,6 +69,10 @@ class Config:
     @property
     def ajout_eau(self):
         return self.donnees["ajout_eau"]
+
+    @property
+    def chlore(self):
+        return self.donnees["chlore"]
 
     def to_dict(self):
         return json.loads(json.dumps(self.donnees))  # copie profonde

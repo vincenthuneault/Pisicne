@@ -15,6 +15,22 @@
     </div>
   </header>
 
+  <!-- ===================== Zone d'alertes (en haut de page) ===================== -->
+  <!-- Affiche les alertes actives : chloration due, perte de connexion, etc.
+       Remplie par le JS (rendreAlertes). Masquée s'il n'y a rien. -->
+  <div id="alertes" class="alertes" hidden></div>
+
+  <!-- ===================== Chloration ===================== -->
+  <section id="section-chlore">
+    <h2>Chloration <span class="aide">— rappel d'ajout de chlore</span></h2>
+    <div class="chlore-infos">
+      <span id="chlore-dernier">Dernier ajout : —</span>
+      <span id="chlore-prochain">Prochaine échéance : —</span>
+      <span id="chlore-restant" class="chlore-restant">—</span>
+    </div>
+    <button id="btn-chlore" class="btn vert">✅ J'ai ajouté du chlore</button>
+  </section>
+
   <!-- ===================== Schéma de procédé (P&ID animé) ===================== -->
   <section class="section-schema">
     <h2>Schéma de procédé <span class="aide">— vue en direct du circuit (animée par l'état estimé)</span></h2>
@@ -307,6 +323,11 @@
           <input type="number" name="ajout_eau.impulsion_ouverture_ms" min="1" step="1"></label>
         <label>Durée de maintien (s)
           <input type="number" name="ajout_eau.duree_maintien_s" min="1" step="1"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Chloration</legend>
+        <label>Intervalle entre chlorations (jours)
+          <input type="number" name="chlore.intervalle_jours" min="0.5" step="0.5"></label>
       </fieldset>
       <button type="submit" class="btn">Enregistrer les paramètres</button>
     </form>
